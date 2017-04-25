@@ -18,4 +18,4 @@ A client has no idea that it is playing a game but is blinking leds, playing sou
 
 
 Want to know more?
-Chack out the [wiki](https://github.com/Ghoust-game/ghoust/wiki)
+Check out the [wiki](https://github.com/Ghoust-game/ghoust/wiki)
