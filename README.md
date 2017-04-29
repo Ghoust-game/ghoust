@@ -2,8 +2,6 @@
 
 This repository is about the actual GAME
 
-The game is written in python and runs on a raspberry pi.
-
 There will be different variations of the game.
 
 The current state is one game implimentation of the "Last (wo)man standing" gametype.
