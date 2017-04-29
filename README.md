@@ -1,4 +1,4 @@
-# GHOUST
+#GHOUST
 
 This repository is about the actual GAME
 
