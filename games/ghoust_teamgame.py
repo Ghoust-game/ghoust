@@ -2,11 +2,11 @@
 
 from ghoust_srv import filter_clients
 from threading import Timer
-import time
+import time, random, colorsys
 
 from IPython import embed
 
-class ghoust_game:
+class ghoust_teamgame:
     
     def __init__(self, number, join_mode = "auto"):
         print "init"
@@ -28,14 +28,21 @@ class ghoust_game:
         self.end_t = 5
 
     def __str__(self):
-        return  "ghoust_game (game number {})".format(self.game_number)
+        return  "ghoust_teamgame (game number {})".format(self.game_number)
     
     def check_win(self):
         # count alive
-        living = filter_clients(self.players, status = "GO")
-        if len(living) == 1:
-            self.end_game(p = living[0])
-        if len(living) == 0:
+        lteams = []
+        for team in self.players_team:
+            l = 0
+            for p in team:
+                l += 1 if p.status == "GO" else 0
+            if l != 0:
+                lteams.append(team)
+        
+        if len(lteams) == 1:
+            self.end_game(team = lteams[0])
+        if len(lteams) == 0:
             print "todo all dead before checkwin"
             self.end_game()
     
@@ -46,12 +53,12 @@ class ghoust_game:
         self.endTimer = None
 
 	# all clients in inactive mode
-	for _,e in self.players.items():
-		
-		if self.join_mode == "auto":
-			e.join()
-		else:
-			e.leave()
+	for _,e in self.players.items():	
+	    
+            if self.join_mode == "auto":
+	    	e.join()
+            else:
+		e.leave()
 	self.pre_game_timer()
 
     def pre_game_timer(self):
@@ -64,21 +71,38 @@ class ghoust_game:
     def start_game(self):
         print "############# game (",self.game_number,") ##############"
         self.gamestatus = "game"
-        self.pregameTimer = None
-        # all joined clients: config and in go mode
-        for e in filter_clients(self.players, status="ACTIVE"):
-	    e.set_accel_thresh(self.out_thresh, self.warn_thresh)
-            e.start()
+        self.stop_timers(pregame = True)
+        
+        active = filter_clients(self.players, status="ACTIVE")
+        
+        # make teams from players
+        # TODO more teams for larger crowds
+        self.n_teams = 2
+
+        # split fairly into n randomized teams
+        random.shuffle(active)
+        self.players_team = [active[i::self.n_teams] for i in xrange(self.n_teams)]
+        print self.players_team 
+        for i,l in enumerate(self.players_team):
+            color = colorsys.hsv_to_rgb(i*1.0/self.n_teams, 0.5, 0.5)
+            color = tuple(int(x*1023) for x in color)
+            for p in l:
+                p.setteam(i)
+                #p.game_params.update({"color":color})
+                p._config("led", val=color)
+                p.start()
+	        p.set_accel_thresh(self.out_thresh, self.warn_thresh)
 
         # set timer
         self.start_timers(game=True)
+       
 
-    def end_game(self, p=None, timeout=False):
+    def end_game(self, team=None, timeout=False):
         print "############# endgame (",self.game_number,") ##############"
         self.gamestatus = "endgame"
-
-        if   p != None:
-            p.win()
+        if team != None:
+            print team
+            [p.win() for p in team]
         elif timeout != False:
             for e in filter_clients(self.players, status="GO"):
                 e.timeout()

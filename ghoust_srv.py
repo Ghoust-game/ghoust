@@ -2,9 +2,10 @@
 import time
 
 import paho.mqtt.client as mqtt
-import importlib
-from threading import Timer
+import importlib, time, argparse
+from socket import error as socket_error
 
+from threading import Timer
 
 class Player:
     def __init__(self, pid, mqtt_client, name="", game=None):
@@ -19,10 +20,14 @@ class Player:
         # can be used to store game specific parameters in the player object
         self.game_params = dict()
     
-    def name(self, name):
+    def __repr__(self):
+        return str(self.pid)
+
+    def setname(self, name):
         self.name = name
 
-    def team(self, n):
+    def setteam(self, n):
+        print self.pid + ": team "+ str(n)
         self.team = n
 
     def warn(self):
@@ -30,11 +35,8 @@ class Player:
 
         # vibrate and light softly
 	#self._config("led", preset = 2)
-	# yellow led
-	self._config("led", val=[1023,1023,0000], duration_led=500)
-	# // uncommented overflo
-        #self._config("motor", preset = 2)
- 
+	self._config("led", val=[1023,1023,0], duration_led=500)
+        self._config("motor", preset = 2) 
 	#self._config("buzzer", preset = 2)
 
     def out(self):
@@ -42,9 +44,9 @@ class Player:
         self.status = "INACTIVE"
         
 	# vibrate hard, light red, set inactive
-        self._config("led", val=[1023,0000,0000])
-	self._config("motor", preset = 2)
-	#self._config("led", preset = 1)
+	self._config("motor", preset = 1)
+	self._config("led", preset = 1)
+	self._config("led", val=[1023,0,0], duration_led=1000)
 	self._config("buzzer", preset = 3)
     
     def timeout(self):
@@ -63,7 +65,7 @@ class Player:
         self.status = "INACTIVE"
         # light orange, weirdly vibrate
 	self._config("motor", preset = 1)
-	#self._config("led", preset = 1)
+	self._config("led", preset = 1)
 	self._config("led", val=[1023,1023,0], duration_led=1000)
 	#self._config("buzzer", preset = 1)
 	
@@ -88,19 +90,18 @@ class Player:
         print self.pid + ": start"
         self.status = "GO"
 	self._config("motor")
-	#self._config("led")
+	self._config("led")
 	self._config("led", val=[0,1023,0])
 	self._config("buzzer", preset=2)
 
     def win(self):
         print self.pid + ": win"
         # vibrate partily, light green
-	self._config("led",preset = 1)
-	#self._config("led", val=[0,1023,0], duration_led=5)
-        self._config("motor",preset=3)
+	self._config("motor",preset=3)
+	self._config("led")
+	self._config("led", val=[0,1023,0], duration_led=2000)
 	self._config("buzzer", preset = 1)
-            
-
+    
     def select_game(self, n):
         self.select_game_n = n
         #print "player ",self.pid,": select game, flash ",n
@@ -151,20 +152,19 @@ class Player:
             if parameter == "led":
                 fstring = "RAW:{:04},{:04},{:04}"
 		if duration_led != None:
-                	fstring = "RAW:{:04},{:04},{:04},{:04}"
-			val.append(duration_led)
-
+                    fstring = "RAW:{:04},{:04},{:04},{:04}"
+                    val.append(duration_led)
             self.client.publish(topic, fstring.format(*val))
-
-            
 
 
 class GHOUST:
 
-    def __init__(self, game_list):
+    def __init__(self, game_list, host, port):
         
         self.clients = dict()
-        
+        self.host = host
+        self.port = port
+
         self.client = mqtt.Client("GHOUST_SRV", clean_session=False)
         self.client.will_set("GHOUST/server/status", "EXIT")
         self.client._on_connect = self._on_connect
@@ -175,13 +175,25 @@ class GHOUST:
         
         # game modules
         self.games = []
+        self.setgames(game_list)
+    
+    #### game functions ####
+    
+    def setgames(self, game_list):
+        # stop old games
+        if len(self.games) > 0:
+            for g in self.games:
+                g.stop()
+
+        self.games = []
+        # start new games
         for i, g in enumerate(game_list):
             m = importlib.import_module("games."+g)
             C = getattr(m, g)
-            self.games.append(C(i))
+            game = C(i)
+            game.setup()
+            self.games.append(game)
 
-    #### game functions ####
-    
     # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
     # led val: [0-1023, 0-1023, 0-10123], [r, g, b]
     # parameter: ["motor", "buzzer", "led"]
@@ -211,7 +223,8 @@ class GHOUST:
 
     def _on_connect(self, client, userdata, flags, rc):
         print("Connected with result code " + str(rc))
-
+        
+        client.subscribe("GHOUST/server/changegame")
         client.subscribe("GHOUST/clients/+/status")
         client.subscribe("GHOUST/clients/+/events/button")
         client.subscribe("GHOUST/clients/+/events/accelerometer")
@@ -220,10 +233,15 @@ class GHOUST:
     def _on_message(self, client, userdata, msg):
             topic = msg.topic.split("/")
             payload = str(msg.payload)
-            if len(topic) < 4:
+            if len(topic) < 3:
                     print("msg tree too short! debug: " +msg.topic + " " + payload)
                     return
             
+            if topic[1] == "server":
+                if topic[2] == "changegame":
+                    self.setgames(payload.split(","))
+                return
+
             pid = topic[2]
             subtree = topic[3]
             if subtree == "status":
@@ -233,7 +251,6 @@ class GHOUST:
                             self.clients.update({ pid : pobj })
                             if len(self.games) == 1 :
                                 pobj.set_game(self.games[0])
-				pobj.join()
 
                     elif payload == "DISCONNECTED" and self.clients.has_key(pid):
                             pobj = self.clients[pid]
@@ -270,12 +287,18 @@ class GHOUST:
         self.client.loop_stop()
 
     def run(self):
-        self.client.connect("localhost", 1883, 60)
+        for i in xrange(3):
+            try:
+                self.client.connect(self.host, self.port, 10)
+                break
+            except socket_error as e:
+                print("socket.error: [{}] {}".format(e.errno,e.strerror))
+                if i == 2:
+                    raise e
+                print("retrying after 10s")
+                time.sleep(10)
+
         self.client.publish("GHOUST/server/status", "ACTIVE")
-        
-        for g in self.games:
-            g.setup()
-        
         self.client.loop_forever()
 
 #############################
@@ -286,21 +309,25 @@ def filter_clients(c, status=""):
     return []
 
 if __name__ == "__main__":
-    #import ghoust_debug_clients
-    #debug = ghoust_debug_clients.ghoust_debug(num_clients=30)
+    debug = False
+    if debug:
+        import ghoust_debug_clients
+        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
 
     
-    # TODO argparse
-    #g = GHOUST(["ghoust_game", "ghoust_game"])
-    g = GHOUST(["ghoust_game"])
-    #g = GHOUST(["sort_game"])
+    parser = argparse.ArgumentParser(description="GHOUST. it is a game. it is very good")
+    parser.add_argument('games', metavar='game', type=str, nargs='+', help="the games to be run")
+    parser.add_argument('-H', '--host', nargs='?', type=str, default='localhost', help="Host where MQTT server is running")
+    parser.add_argument('-p', '--port', nargs='?', type=int, default=1883, help="Port where MQTT server is running")
+    args = parser.parse_args()
+    
+    g = GHOUST(args.games, args.host, args.port)
     
     try:
         g.run()
     except KeyboardInterrupt:
         g.stop()
 
-
-    #print "\n Cleaning up, stopping debug clients"
-    #debug.stop()
+    if debug:
+        debugclients.stop()
 

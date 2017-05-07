@@ -51,8 +51,14 @@ class ghoust_debug:
                 if randint(0,9)>8:
                     v = "LONGPRESS"
                 client.publish("GHOUST/clients/{0}/events/button".format(cid), v)
-            if s == 1: 
-                client.publish("GHOUST/clients/{0}/events/accelerometer".format(cid), int(gammavariate(1,1)*10))
+            if s == 1:
+                a = int(gammavariate(1,1)*10)
+                if a > 10:
+                    if a > 13:
+                        client.publish("GHOUST/clients/{0}/events/accelerometer".format(cid), "OUTSHOCK")
+                    else:
+                        client.publish("GHOUST/clients/{0}/events/accelerometer".format(cid), "WARNSHOCK")
+
             if s == 2:
                 pass
                 #client.publish("GHOUST/clients/{0}/events/gestures".format(cid), "2")
