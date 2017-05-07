@@ -16,7 +16,7 @@ class GHOUST_TEST:
         self.client._on_message = self._on_message
 
     def _on_connect(self, client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
+        print(("Connected with result code " + str(rc)))
 
         client.subscribe("GHOUST/clients/+/status")
         client.subscribe("GHOUST/clients/+/events/button")
@@ -34,7 +34,7 @@ class GHOUST_TEST:
         topic = msg.topic.split("/")
         payload = str(msg.payload)
         if len(topic) < 4:
-            print("msg tree too short! debug: " + msg.topic + " " + payload)
+            print(("msg tree too short! debug: " + msg.topic + " " + payload))
             return
 
         pid = topic[2]
@@ -57,15 +57,15 @@ class GHOUST_TEST:
                 self._on_gestures(payload)
 
     def _on_accelerometer(self, m):
-        print m
+        print(m)
         self.client.publish("GHOUST/clients/" + self.pid +
                             "/config/motor", "PRESET:1")
 
     def _on_button(self, m):
-        print m
+        print(m)
 
     def _on_gestures(self, m):
-        print m
+        print(m)
 
     def run(self):
         self.client.connect("localhost", 1883, 60)
@@ -83,8 +83,8 @@ if __name__ == "__main__":
     try:
         g.run()
         while True:
-            _warn = raw_input("warn:")
-            _out = raw_input("out:")
+            _warn = input("warn:")
+            _out = input("out:")
             g.set_accel_thresh(_out, _warn)
 
     except KeyboardInterrupt:

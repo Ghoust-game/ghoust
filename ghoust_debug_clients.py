@@ -27,7 +27,7 @@ class ghoust_debug:
             t = threading.currentThread()
             t.do_run = False
 
-        print("debug: " + msg.topic + " " + str(msg.payload))
+        print(("debug: " + msg.topic + " " + str(msg.payload)))
 
     def client(self, delay=3):
         time.sleep(delay)

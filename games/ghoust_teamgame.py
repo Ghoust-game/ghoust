@@ -12,7 +12,7 @@ from IPython import embed
 class ghoust_teamgame:
 
     def __init__(self, number, join_mode="auto"):
-        print "init"
+        print("init")
         self.game_number = number
         self.players = dict()
 
@@ -46,16 +46,16 @@ class ghoust_teamgame:
         if len(lteams) == 1:
             self.end_game(team=lteams[0])
         if len(lteams) == 0:
-            print "todo all dead before checkwin"
+            print("todo all dead before checkwin")
             self.end_game()
 
     def pre_game(self):
-        print "############# pregame (", self.game_number, ") ##############"
+        print("############# pregame (", self.game_number, ") ##############")
         self.gamestatus = "pregame"
         self.endTimer = None
 
         # all clients in inactive mode
-        for _, e in self.players.items():
+        for _, e in list(self.players.items()):
 
             if self.join_mode == "auto":
                 e.join()
@@ -71,7 +71,7 @@ class ghoust_teamgame:
             self.stop_timers(pregame=True)
 
     def start_game(self):
-        print "############# game (", self.game_number, ") ##############"
+        print("############# game (", self.game_number, ") ##############")
         self.gamestatus = "game"
         self.stop_timers(pregame=True)
 
@@ -84,8 +84,8 @@ class ghoust_teamgame:
         # split fairly into n randomized teams
         random.shuffle(active)
         self.players_team = [active[i::self.n_teams]
-                             for i in xrange(self.n_teams)]
-        print self.players_team
+                             for i in range(self.n_teams)]
+        print(self.players_team)
         for i, l in enumerate(self.players_team):
             color = colorsys.hsv_to_rgb(i * 1.0 / self.n_teams, 0.5, 0.5)
             color = tuple(int(x * 1023) for x in color)
@@ -98,16 +98,16 @@ class ghoust_teamgame:
         self.start_timers(game=True)
 
     def end_game(self, team=None, timeout=False):
-        print "############# endgame (", self.game_number, ") ##############"
+        print("############# endgame (", self.game_number, ") ##############")
         self.gamestatus = "endgame"
         if team != None:
-            print team
+            print(team)
             [p.win() for p in team]
         elif timeout != False:
             for e in filter_clients(self.players, status="GO"):
                 e.timeout()
         else:
-            for _, e in self.players.items():
+            for _, e in list(self.players.items()):
                 e.abort()
         self.stop_timers(game=True)
         self.start_timers(end=True)

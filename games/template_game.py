@@ -7,7 +7,7 @@ from threading import Timer
 class template_game:
 
     def __init__(self, number):
-        print "init"
+        print("init")
 
         self.game_number = number
         self.players = dict()
@@ -31,16 +31,16 @@ class template_game:
         if len(living) == 1:
             self.end_game(p=living[0])
         if len(living) == 0:
-            print "todo all dead before checkwin"
+            print("todo all dead before checkwin")
             exit(-1)
 
     def pre_game(self):
-        print "############# pregame (", self.game_number, ") ##############"
+        print("############# pregame (", self.game_number, ") ##############")
         self.gamestatus = "pregame"
         self.endTimer = None
 
         # all clients in inactive mode
-        for _, e in self.players.items():
+        for _, e in list(self.players.items()):
             e.leave()
 
     def pre_game_timer(self):
@@ -51,7 +51,7 @@ class template_game:
             self.stop_timers(pregame=True)
 
     def start_game(self):
-        print "############# game (", self.game_number, ") ##############"
+        print("############# game (", self.game_number, ") ##############")
         self.gamestatus = "game"
         self.pregameTimer = None
         # all joined clients in go mode
@@ -62,7 +62,7 @@ class template_game:
         self.start_timers(game=True)
 
     def end_game(self, p=None, timeout=False):
-        print "############# endgame (", self.game_number, ") ##############"
+        print("############# endgame (", self.game_number, ") ##############")
         self.gamestatus = "endgame"
 
         if p != None:

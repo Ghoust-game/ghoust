@@ -17,7 +17,7 @@ class Player:
         self.client = mqtt_client
         self.team = 0
         self.status = "SELECT_GAME"
-        self.basestring = "GHOUST/clients/{0}".format(self.pid)
+        self.str = "GHOUST/clients/{0}".format(self.pid)
         self.game = game
         self.select_game(0)
         self.go_color = [0, 1023, 0]
@@ -32,14 +32,14 @@ class Player:
         self.name = name
 
     def setteam(self, n, color = None):
-        print self.pid + ": team " + str(n)
+        print(self.pid + ": team " + str(n))
         self.team = n
         if color != None:
             self.go_color = color
 
 
     def warn(self):
-        print self.pid + ": warn"
+        print(self.pid + ": warn")
 
         # vibrate and light softly
         #self._config("led", preset = 2)
@@ -48,7 +48,7 @@ class Player:
         #self._config("buzzer", preset = 2)
 
     def out(self):
-        print self.pid + ": out"
+        print(self.pid + ": out")
         self.status = "INACTIVE"
         # reset go color to green
         self.go_color = [0, 1023, 0]
@@ -60,7 +60,7 @@ class Player:
 
 
     def timeout(self):
-        print self.pid + ": timeout"
+        print(self.pid + ": timeout")
         self.status = "INACTIVE"
 
         # timeout action
@@ -68,21 +68,21 @@ class Player:
         self._config("motor", preset=1)
 
     def abort(self):
-        print self.pid + ": abort"
+        print(self.pid + ": abort")
         self.status = "INACTIVE"
         # light orange, weirdly vibrate
         self._config("led", val=[1023, 1023, 0], duration_led=1000)
         self._config("motor", preset=1)
 
     def join(self):
-        print self.pid + ": join game ", self.game.game_number
+        print(self.pid + ": join game ", self.game.game_number)
         self.status = "ACTIVE"
         # action?
         self._config("motor", preset=1)
         self._config("led", val=[0,0,0])
 
     def leave(self):
-        print self.pid + ": leave ", self.game.game_number
+        print(self.pid + ": leave ", self.game.game_number)
         self.status = "INACTIVE"
         # action ?
         self._config("motor", preset=1)
@@ -90,14 +90,14 @@ class Player:
         #self._config("buzzer", preset = 1)
 
     def start(self):
-        print self.pid + ": start"
+        print(self.pid + ": start")
         self.status = "GO"
         self._config("motor")
         self._config("led", val=self.go_color)
         self._config("buzzer", preset=2)
 
     def win(self):
-        print self.pid + ": win"
+        print(self.pid + ": win")
         # vibrate partily, light green
         self._config("motor", preset=3)
         self._config("led", preset=1)
@@ -110,8 +110,8 @@ class Player:
 
     def set_accel_thresh(self, out, warn):
 
-        self.client.publish(self.basestring + "/config/accel_out", str(out))
-        self.client.publish(self.basestring + "/config/accel_warn", str(warn))
+        self.client.publish(self.str + "/config/accel_out", str(out))
+        self.client.publish(self.str + "/config/accel_warn", str(warn))
 
     def set_game(self, game_p):
         if self.game == game_p:
@@ -122,7 +122,7 @@ class Player:
 
         self.game = game_p
         self.game_params = dict()
-        print self.pid, " set game:: ", str(game_p)
+        print(self.pid, " set game:: ", str(game_p))
         if game_p != None:
             self.status = "INACTIVE"
             self.game._join(self.pid, self)
@@ -136,13 +136,13 @@ class Player:
     # duration_led: ms, only used for value input
     def _config(self, parameter, val=None, preset=None, duration_led=None):
         if parameter not in ["motor", "buzzer", "led"]:
-            print "parameter not valid"
+            print("parameter not valid")
             return
-        topic = self.basestring + "/config/{}".format(parameter)
+        topic = self.str + "/config/{}".format(parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
-                print "vibrate preset not in range"
+                print("vibrate preset not in range")
             self.client.publish(topic, "PRESET:{}".format(preset))
 
         if val != None:
@@ -150,7 +150,7 @@ class Player:
                     (parameter != 'led' and not(0 <= val[1])) or
                     (parameter == 'led' and not(0 <= val[1] <= 1023)) or
                     (parameter == 'led' and not(0 <= val[2] <= 1023))):
-                print "config values not in range"
+                print("config values not in range")
             fstring = "RAW:{:04},{:04}"
             if parameter == "led":
                 fstring = "RAW:{:04},{:04},{:04}"
@@ -210,20 +210,20 @@ class GHOUST:
 
     def _game_config(self, game, parameter, val=None, preset=None):
         if not (0 <= game <= 4) or parameter not in ["motor", "buzzer", "led"]:
-            print "game number or parameter not valid"
+            print("game number or parameter not valid")
             return
         topic = "GHOUST/game/{}/{}".format(game, parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
-                print "vibrate preset not in range"
+                print("vibrate preset not in range")
             self.client.publish(topic, "PRESET:" + preset)
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
                 not (0 <= val[1] <= 1023) or
                     (parameter == "led" and not(0 <= val[2] <= 1023))):
-                print "vibrate values not in range"
+                print("vibrate values not in range")
             fstring = "RAW:{:04},{:04}"
             if parameter == "led":
                 fstring = "RAW:{:04},{:04},{:04}"
@@ -232,7 +232,7 @@ class GHOUST:
     #### mqtt callbacks ####
 
     def _on_connect(self, client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
+        print(("Connected with result code " + str(rc)))
 
         client.subscribe("GHOUST/server/changegame")
         client.subscribe("GHOUST/clients/+/status")
@@ -244,7 +244,7 @@ class GHOUST:
         topic = msg.topic.split("/")
         payload = str(msg.payload)
         if len(topic) < 3:
-            print("msg tree too short! debug: " + msg.topic + " " + payload)
+            print(("msg tree too short! debug: " + msg.topic + " " + payload))
             return
 
         if topic[1] == "server":
@@ -262,7 +262,7 @@ class GHOUST:
                 if len(self.games) == 1:
                     pobj.set_game(self.games[0])
 
-            elif payload == "DISCONNECTED" and self.clients.has_key(pid):
+            elif payload == "DISCONNECTED" and pid in self.clients:
                 pobj = self.clients[pid]
                 self.clients.pop(pid)
                 pobj.set_game(None)
@@ -300,12 +300,12 @@ class GHOUST:
         self.client.loop_stop()
 
     def run(self):
-        for i in xrange(3):
+        for i in range(3):
             try:
                 self.client.connect(self.host, self.port, 10)
                 break
             except socket_error as e:
-                print("socket.error: [{}] {}".format(e.errno, e.strerror))
+                print(("socket.error: [{}] {}".format(e.errno, e.strerror)))
                 if i == 2:
                     raise e
                 print("retrying after 10s")
@@ -323,7 +323,7 @@ class GHOUST:
 
 def filter_clients(c, status=""):
     if status != "":
-        return [e for _, e in c.items() if e.status == status]
+        return [e for _, e in list(c.items()) if e.status == status]
     return []
 
 

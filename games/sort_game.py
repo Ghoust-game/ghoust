@@ -2,7 +2,7 @@
 
 from ghoust_srv import filter_clients
 from threading import Timer
-from thread import start_new_thread
+from _thread import start_new_thread
 import random
 import time
 import colorsys
@@ -22,7 +22,7 @@ from IPython import embed
 class sort_game:
 
     def __init__(self, number):
-        print "init"
+        print("init")
 
         self.game_number = number
         self.players = dict()
@@ -54,16 +54,16 @@ class sort_game:
                 count -= p.game_params["clicked"]
             if count == 0:
                 self.end_game(win_team=l)
-                print self.game_number, " one team called win condition"
+                print(self.game_number, " one team called win condition")
                 break
 
     def pre_game(self):
-        print "############# pregame (", self.game_number, ") ##############"
+        print("############# pregame (", self.game_number, ") ##############")
         self.gamestatus = "pregame"
         self.stop_timers(end=True, winblink=True)
 
         # all clients in inactive mode
-        for _, e in self.players.items():
+        for _, e in list(self.players.items()):
             e.game_params = dict()
             e.leave()
 
@@ -75,7 +75,7 @@ class sort_game:
             self.stop_timers(pregame=True)
 
     def start_game(self):
-        print "############# game (", self.game_number, ") ##############"
+        print("############# game (", self.game_number, ") ##############")
         self.gamestatus = "game"
         self.pregameTimer = None
 
@@ -87,7 +87,7 @@ class sort_game:
         # split fairly into n randomized teams
         random.shuffle(active)
         self.players_team = [active[i::self.n_teams]
-                             for i in xrange(self.n_teams)]
+                             for i in range(self.n_teams)]
         for i, l in enumerate(self.players_team):
             color = colorsys.hsv_to_rgb(i * 1.0 / self.n_teams, 0.5, 0.5)
             color = tuple(int(x * 1023) for x in color)
@@ -99,7 +99,7 @@ class sort_game:
         self.start_timers(game=True, blink=True)
 
     def end_game(self, win_team=[], abort=False, timeout=False):
-        print "############# endgame (", self.game_number, ") ##############"
+        print("############# endgame (", self.game_number, ") ##############")
         self.gamestatus = "endgame"
 
         if timeout == True:
