@@ -30,7 +30,7 @@ class ghoust_chooseteamgame:
         self.warn_thresh = 8
 
         # configs
-        self.pregame_t = 10
+        self.pregame_t = 20
         self.game_t = 120
         self.end_t = 5
 
@@ -177,6 +177,18 @@ class ghoust_chooseteamgame:
             elif "OUTSHOCK" in value:
                 p.out()
                 self.check_win()
+        if self.gamestatus == "pregame" and "OUTSHOCK" in value:
+            t = p.team
+            if t == 0:
+                p.setteam(1, self.t1_color)
+                p._config('led', self.t1_color)
+            elif t == 1:
+                p.setteam(2, self.t2_color)
+                p._config('led', self.t2_color)
+            elif t == 2:
+                p.setteam(0, [0,0,0])
+                p._config('led', [0,0,0])
+
 
     def _on_button(self, p, clicktype):
 
@@ -190,14 +202,14 @@ class ghoust_chooseteamgame:
 
     def _on_gestures(self, p, value):
         if self.gamestatus == "pregame":
-            if value == "TODO flat":
-                p.setteam(1)
+            if value == "PORTRAIT_DOWN":
+                p.setteam(1, self.t1_color)
                 p._config('led', val= self.t1_color)
-            elif value == "TODO upsidedown":
-                p.setteam(2)
+            elif value != "PORTRAIT_UP":
+                p.setteam(2, self.t2_color)
                 p._config('led', val= self.t2_color)
             else:
-                p.setteam(0)
+                p.setteam(0, [0,0,0])
                 p._config('led', val= self.t0_color)
 
     def _join(self, pid, p):

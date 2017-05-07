@@ -92,7 +92,7 @@ class Player:
     def start(self):
         print(self.pid + ": start")
         self.status = "GO"
-        self._config("motor")
+        self._config("motor", val=[1023, 750])
         self._config("led", val=self.go_color)
         self._config("buzzer", preset=2)
 
@@ -122,7 +122,6 @@ class Player:
 
         self.game = game_p
         self.game_params = dict()
-        print(self.pid, " set game:: ", str(game_p))
         if game_p != None:
             self.status = "INACTIVE"
             self.game._join(self.pid, self)
@@ -203,6 +202,7 @@ class GHOUST:
             self.games.append(game)
             gstring.append("{}:{}".format(i, g))
         self.activegames = ','.join(gstring)
+        self.client.publish("GHOUST/server/status/activegames", self.activegames, retain=True)
 
     # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
     # led val: [0-1023, 0-1023, 0-10123], [r, g, b]
