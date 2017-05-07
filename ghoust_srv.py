@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 import importlib
 import time
 import argparse
+import pkgutil
 from socket import error as socket_error
 
 from threading import Timer
@@ -19,6 +20,7 @@ class Player:
         self.basestring = "GHOUST/clients/{0}".format(self.pid)
         self.game = game
         self.select_game(0)
+        self.go_color = [0, 1023, 0]
         self.led_timer = None
         # can be used to store game specific parameters in the player object
         self.game_params = dict()
@@ -29,9 +31,12 @@ class Player:
     def setname(self, name):
         self.name = name
 
-    def setteam(self, n):
+    def setteam(self, n, color = None):
         print self.pid + ": team " + str(n)
         self.team = n
+        if color != None:
+            self.go_color = color
+
 
     def warn(self):
         print self.pid + ": warn"
@@ -45,60 +50,57 @@ class Player:
     def out(self):
         print self.pid + ": out"
         self.status = "INACTIVE"
-
+        # reset go color to green
+        self.go_color = [0, 1023, 0]
+    
         # vibrate hard, light red, set inactive
-        self._config("motor", preset=1)
-        self._config("led", preset=1)
-        self._config("led", val=[1023, 0, 0], duration_led=1000)
+        self._config("led", val=[1023, 0, 0])
+        self._config("motor", val=[1023, 3000])
         self._config("buzzer", preset=3)
+
 
     def timeout(self):
         print self.pid + ": timeout"
         self.status = "INACTIVE"
 
         # timeout action
-        self._config("motor", preset=1)
-        self._config("led", preset=1)
         self._config("led", val=[1023, 1023, 0], duration_led=1000)
-        #self._config("buzzer", preset = 1)
+        self._config("motor", preset=1)
 
     def abort(self):
         print self.pid + ": abort"
         self.status = "INACTIVE"
         # light orange, weirdly vibrate
-        self._config("motor", preset=1)
-        self._config("led", preset=1)
         self._config("led", val=[1023, 1023, 0], duration_led=1000)
-        #self._config("buzzer", preset = 1)
+        self._config("motor", preset=1)
 
     def join(self):
         print self.pid + ": join game ", self.game.game_number
         self.status = "ACTIVE"
         # action?
         self._config("motor", preset=1)
-        self._config("led", preset=1)
-        #self._config("buzzer", preset = 1)
+        self._config("led", val=[0,0,0])
 
     def leave(self):
         print self.pid + ": leave ", self.game.game_number
         self.status = "INACTIVE"
         # action ?
         self._config("motor", preset=1)
-        self._config("led", preset=1)
+        self._config("led", val = [0,0,0])
         #self._config("buzzer", preset = 1)
 
     def start(self):
         print self.pid + ": start"
         self.status = "GO"
         self._config("motor")
-        self._config("led", val=[0, 1023, 0])
+        self._config("led", val=self.go_color)
         self._config("buzzer", preset=2)
 
     def win(self):
         print self.pid + ": win"
         # vibrate partily, light green
         self._config("motor", preset=3)
-        self._config("led", val=[0, 1023, 0], duration_led=2000)
+        self._config("led", preset=1)
         self._config("buzzer", preset=1)
 
     def select_game(self, n):
@@ -128,7 +130,7 @@ class Player:
             self.status = "SELECT_GAME"
 
     ############# raw functions for low level access ##############
-    # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
+    # buzzer, vibro val: [0-1023, 0-], [frequency (hz), duration (ms)]
     # led val: [0-1023, 0-1023, 0-1023, 0-inf], [r, g, b, duration (ms)]
     # parameter: ["motor", "buzzer", "led"]
     # duration_led: ms, only used for value input
@@ -145,8 +147,9 @@ class Player:
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
-                not (0 <= val[1] <= 1023) or
-                    (parameter == "led" and not(0 <= val[2] <= 1023))):
+                    (parameter != 'led' and not(0 <= val[1])) or
+                    (parameter == 'led' and not(0 <= val[1] <= 1023)) or
+                    (parameter == 'led' and not(0 <= val[2] <= 1023))):
                 print "config values not in range"
             fstring = "RAW:{:04},{:04}"
             if parameter == "led":
@@ -176,23 +179,30 @@ class GHOUST:
         # game modules
         self.games = []
         self.setgames(game_list)
-
+        gstring = []
+        for i,m, ispkg in pkgutil.walk_packages(path="games/."):
+            if 'games.' in m:
+                gstring.append(m[6:])
+        self.gamemodes = ','.join(gstring)
+        
     #### game functions ####
 
     def setgames(self, game_list):
         # stop old games
-        if len(self.games) > 0:
-            for g in self.games:
-                g.stop()
+        for g in self.games:
+            g.stop()
 
         self.games = []
         # start new games
+        gstring = []
         for i, g in enumerate(game_list):
             m = importlib.import_module("games." + g)
             C = getattr(m, g)
             game = C(i)
             game.setup()
             self.games.append(game)
+            gstring.append("{}:{}".format(i, g))
+        self.activegames = ','.join(gstring)
 
     # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
     # led val: [0-1023, 0-1023, 0-10123], [r, g, b]
@@ -302,6 +312,10 @@ class GHOUST:
                 time.sleep(10)
 
         self.client.publish("GHOUST/server/status", "ACTIVE")
+        self.client.publish("GHOUST/server/status/activegames", self.activegames, retain=True)
+        self.client.publish("GHOUST/server/status/gamemodes", self.gamemodes, retain=True)
+
+
         self.client.loop_forever()
 
 #############################
@@ -331,7 +345,7 @@ if __name__ == "__main__":
     if args.debug:
         import ghoust_debug_clients
         debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
-
+    
     try:
         g.run()
     except KeyboardInterrupt:
