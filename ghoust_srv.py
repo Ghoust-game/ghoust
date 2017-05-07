@@ -285,8 +285,8 @@ class GHOUST:
                     pobj.game._on_gestures(pobj, payload)
 
     def stop(self):
-        for g in self.games:
-            g.stop()
+        for game in self.games:
+            game.stop()
         self.client.loop_stop()
 
     def run(self):
