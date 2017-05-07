@@ -91,7 +91,6 @@ class Player:
         print self.pid + ": start"
         self.status = "GO"
         self._config("motor")
-        self._config("led")
         self._config("led", val=[0, 1023, 0])
         self._config("buzzer", preset=2)
 
@@ -99,7 +98,6 @@ class Player:
         print self.pid + ": win"
         # vibrate partily, light green
         self._config("motor", preset=3)
-        self._config("led")
         self._config("led", val=[0, 1023, 0], duration_led=2000)
         self._config("buzzer", preset=1)
 
@@ -316,10 +314,6 @@ def filter_clients(c, status=""):
 
 
 if __name__ == "__main__":
-    debug = False
-    if debug:
-        import ghoust_debug_clients
-        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
 
     parser = argparse.ArgumentParser(
         description="GHOUST. it is a game. it is very good")
@@ -329,14 +323,19 @@ if __name__ == "__main__":
                         default='localhost', help="Host where MQTT server is running")
     parser.add_argument('-p', '--port', nargs='?', type=int,
                         default=1883, help="Port where MQTT server is running")
+    parser.add_argument('--debug', action='store_true', help="run debug clients")
     args = parser.parse_args()
 
     g = GHOUST(args.games, args.host, args.port)
+    
+    if args.debug:
+        import ghoust_debug_clients
+        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
 
     try:
         g.run()
     except KeyboardInterrupt:
         g.stop()
 
-    if debug:
+    if args.debug:
         debugclients.stop()
