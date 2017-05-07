@@ -38,9 +38,9 @@ class sort_game:
 
         # configs
         self.pregame_t = 5
-        self.game_t = 10
+        self.game_t = 120
         self.end_t = 10
-        self.blink_t = 2
+        self.blink_t = 5
         self.winblink_t = 3
 
     def __str__(self):
@@ -90,12 +90,14 @@ class sort_game:
                              for i in range(self.n_teams)]
         for i, l in enumerate(self.players_team):
             color = colorsys.hsv_to_rgb(i * 1.0 / self.n_teams, 0.5, 0.5)
-            color = tuple(int(x * 1023) for x in color)
+            color = [int(x * 1023) for x in color]
             for p in l:
-                p.game_params.update({"clicked": 0, "team": i, "color": color})
+                p.setteam(i, color= [0,0,0])
+                p.game_params.update({"clicked": 0, "color": color})
                 p.start()
 
         # set timer
+        self.blink_teams()
         self.start_timers(game=True, blink=True)
 
     def end_game(self, win_team=[], abort=False, timeout=False):
@@ -117,19 +119,19 @@ class sort_game:
     def blink_teams(self):
         # blink teams in order
         for i, t in enumerate(self.players_team):
-            start_new_thread(self.team_blink, (t, 0.5))
+            start_new_thread(self.team_blink, (t, 0.15, 75))
+        self.stop_timers(blink=True)
         self.start_timers(blink=True)
 
     def win_blink(self, t):
         self.win_team = t
-        start_new_thread(self.team_blink, (t, 0.25))
+        start_new_thread(self.team_blink, (t, 0.25, 250))
         self.winblink_t = len(t) * 0.25 + 1
         self.start_timers(winblink=True)
 
-    def team_blink(self, t, delay):
+    def team_blink(self, t, delay, ontime):
         for p in t:
-            # TODO led blink only for amount of time...
-            p._config("led", val=p.game_params["color"])
+            p._config("led", val=p.game_params["color"], duration_led = ontime)
             time.sleep(delay)
 
     def start_timers(self, pregame=False, game=False, end=False, blink=False, winblink=False):
@@ -200,7 +202,8 @@ class sort_game:
 
     def _leave(self, pid, p):
         self.players.pop(pid)
-        self.players_team[p.game_params["team"]].pop(p)
+        
+        self.players_team[p.team].pop(p)
 
         if self.gamestatus == "game":
             self.check_win()
