@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import time
 
 import paho.mqtt.client as mqtt
@@ -30,11 +30,11 @@ class Player:
         self.name = name
 
     def setteam(self, n):
-        print self.pid + ": team " + str(n)
+        print(self.pid + ": team " + str(n))
         self.team = n
 
     def warn(self):
-        print self.pid + ": warn"
+        print(self.pid + ": warn")
 
         # vibrate and light softly
         #self._config("led", preset = 2)
@@ -43,7 +43,7 @@ class Player:
         #self._config("buzzer", preset = 2)
 
     def out(self):
-        print self.pid + ": out"
+        print(self.pid + ": out")
         self.status = "INACTIVE"
 
         # vibrate hard, light red, set inactive
@@ -53,7 +53,7 @@ class Player:
         self._config("buzzer", preset=3)
 
     def timeout(self):
-        print self.pid + ": timeout"
+        print(self.pid + ": timeout")
         self.status = "INACTIVE"
 
         # timeout action
@@ -63,7 +63,7 @@ class Player:
         #self._config("buzzer", preset = 1)
 
     def abort(self):
-        print self.pid + ": abort"
+        print(self.pid + ": abort")
         self.status = "INACTIVE"
         # light orange, weirdly vibrate
         self._config("motor", preset=1)
@@ -72,7 +72,7 @@ class Player:
         #self._config("buzzer", preset = 1)
 
     def join(self):
-        print self.pid + ": join game ", self.game.game_number
+        print(self.pid + ": join game ", self.game.game_number)
         self.status = "ACTIVE"
         # action?
         self._config("motor", preset=1)
@@ -80,7 +80,7 @@ class Player:
         #self._config("buzzer", preset = 1)
 
     def leave(self):
-        print self.pid + ": leave ", self.game.game_number
+        print(self.pid + ": leave ", self.game.game_number)
         self.status = "INACTIVE"
         # action ?
         self._config("motor", preset=1)
@@ -88,14 +88,14 @@ class Player:
         #self._config("buzzer", preset = 1)
 
     def start(self):
-        print self.pid + ": start"
+        print(self.pid + ": start")
         self.status = "GO"
         self._config("motor")
         self._config("led", val=[0, 1023, 0])
         self._config("buzzer", preset=2)
 
     def win(self):
-        print self.pid + ": win"
+        print(self.pid + ": win")
         # vibrate partily, light green
         self._config("motor", preset=3)
         self._config("led", val=[0, 1023, 0], duration_led=2000)
@@ -120,7 +120,7 @@ class Player:
 
         self.game = game_p
         self.game_params = dict()
-        print self.pid, " set game:: ", str(game_p)
+        print(self.pid, " set game:: ", str(game_p))
         if game_p != None:
             self.status = "INACTIVE"
             self.game._join(self.pid, self)
@@ -134,20 +134,20 @@ class Player:
     # duration_led: ms, only used for value input
     def _config(self, parameter, val=None, preset=None, duration_led=None):
         if parameter not in ["motor", "buzzer", "led"]:
-            print "parameter not valid"
+            print("parameter not valid")
             return
         topic = self.basestring + "/config/{}".format(parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
-                print "vibrate preset not in range"
+                print("vibrate preset not in range")
             self.client.publish(topic, "PRESET:{}".format(preset))
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
                 not (0 <= val[1] <= 1023) or
                     (parameter == "led" and not(0 <= val[2] <= 1023))):
-                print "config values not in range"
+                print("config values not in range")
             fstring = "RAW:{:04},{:04}"
             if parameter == "led":
                 fstring = "RAW:{:04},{:04},{:04}"
@@ -200,20 +200,20 @@ class GHOUST:
 
     def _game_config(self, game, parameter, val=None, preset=None):
         if not (0 <= game <= 4) or parameter not in ["motor", "buzzer", "led"]:
-            print "game number or parameter not valid"
+            print("game number or parameter not valid")
             return
         topic = "GHOUST/game/{}/{}".format(game, parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
-                print "vibrate preset not in range"
+                print("vibrate preset not in range")
             self.client.publish(topic, "PRESET:" + preset)
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
                 not (0 <= val[1] <= 1023) or
                     (parameter == "led" and not(0 <= val[2] <= 1023))):
-                print "vibrate values not in range"
+                print("vibrate values not in range")
             fstring = "RAW:{:04},{:04}"
             if parameter == "led":
                 fstring = "RAW:{:04},{:04},{:04}"
@@ -312,30 +312,50 @@ def filter_clients(c, status=""):
         return [e for _, e in c.items() if e.status == status]
     return []
 
+def build_arguments_parser():
+    argparse.ArgumentParser(
+        description="GHOUST. it is a game. it is very good")
+    parser.add_argument(
+            'games',
+            metavar='game',
+            type=str,
+            nargs='+',
+            help="the games to be run")
+    parser.add_argument(
+            '-H',
+            '--host',
+            nargs='?',
+            type=str,
+            default='localhost',
+            help="Host where MQTT server is running")
+    parser.add_argument(
+            '-p',
+            '--port',
+            nargs='?',
+            type=int,
+            default=1883,
+            help="Port where MQTT server is running")
+    parser.add_argument(
+            '--debug',
+            action='store_true',
+            help="run debug clients")
+    return parser
+
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(
-        description="GHOUST. it is a game. it is very good")
-    parser.add_argument('games', metavar='game', type=str,
-                        nargs='+', help="the games to be run")
-    parser.add_argument('-H', '--host', nargs='?', type=str,
-                        default='localhost', help="Host where MQTT server is running")
-    parser.add_argument('-p', '--port', nargs='?', type=int,
-                        default=1883, help="Port where MQTT server is running")
-    parser.add_argument('--debug', action='store_true', help="run debug clients")
-    args = parser.parse_args()
-
-    g = GHOUST(args.games, args.host, args.port)
+    parser = build_arguments_parser()
+    args   = parser.parse_args()
+    server = GHOUST(args.games, args.host, args.port)
     
     if args.debug:
         import ghoust_debug_clients
         debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
 
     try:
-        g.run()
+        server.run()
     except KeyboardInterrupt:
-        g.stop()
+        server.stop()
 
     if args.debug:
         debugclients.stop()
