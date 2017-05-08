@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 class Player:
     def __init__(self, pid, mqtt_client, name="", game=None):

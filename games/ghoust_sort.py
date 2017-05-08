@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from ghoust_srv import filter_clients
 from threading import Timer
@@ -7,7 +7,7 @@ import random
 import time
 import colorsys
 
-from IPython import embed
+
 
 # TODO timers
 # winblink should finish before pregame starts because pregame deletes
