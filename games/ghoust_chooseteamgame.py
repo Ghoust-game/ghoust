@@ -110,15 +110,13 @@ class ghoust_chooseteamgame:
                     balance += random_team
 
                 if balance < 0:
-                    x.setteam(1)
+                    x.setteam(1, self.t1_color)
                     team1.append(x)
                     balance += 1
-                    x._config('led', val= self.t1_color)
                 elif balance > 0:
-                    x.setteam(2)
+                    x.setteam(2, self.t2_color)
                     team2.append(x)
                     balance -= 1
-                    x._config('led', val= self.t2_color)
                 
         self.players_team = [team1, team2]
         for i, l in enumerate(self.players_team):

@@ -90,9 +90,7 @@ class ghoust_teamgame:
             color = colorsys.hsv_to_rgb(i * 1.0 / self.n_teams, 0.5, 0.5)
             color = tuple(int(x * 1023) for x in color)
             for p in l:
-                p.setteam(i)
-                # p.game_params.update({"color":color})
-                p._config("led", val=color)
+                p.setteam(i, color=color)
                 p.start()
                 p.set_accel_thresh(self.out_thresh, self.warn_thresh)
 
