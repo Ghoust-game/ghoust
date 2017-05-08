@@ -32,7 +32,7 @@ class GhoustServer:
         self.games = []
         # start new games
         for i, g in enumerate(game_list):
-            m = importlib.import_module("ghoust.games." + g)
+            m = importlib.import_module("games." + g)
             C = getattr(m, g)
             game = C(i)
             game.setup()
