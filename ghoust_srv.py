@@ -26,8 +26,8 @@ class GhoustServer:
     def setgames(self, game_list):
         # stop old games
         if len(self.games) > 0:
-            for g in self.games:
-                g.stop()
+            for game in self.games:
+                game.stop()
 
         self.games = []
         # start new games
