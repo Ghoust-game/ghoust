@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 class Player:
     def __init__(self, pid, mqtt_adapter, name="", game=None):
         self.pid     = pid

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from ghoust_srv import filter_clients
 from threading import Timer
