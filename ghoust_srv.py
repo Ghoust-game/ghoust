@@ -93,7 +93,7 @@ class GHOUST:
 
     def _on_message(self, client, userdata, msg):
         topic = msg.topic.split("/")
-        payload = str(msg.payload)
+        payload = str(msg.payload, 'utf-8')
         if len(topic) < 3:
             print(("msg tree too short! debug: " + msg.topic + " " + payload))
             return
@@ -123,6 +123,9 @@ class GHOUST:
         elif subtree == "events":
             # pass message to game engine callbacks
             elem = topic[4]
+            if pid not in self.clients:
+                print("{} not in client list. msg: {} {}".format(pid, topic, payload))
+                return
             pobj = self.clients[pid]
 
             if pobj.status == "SELECT_GAME":
@@ -195,7 +198,7 @@ if __name__ == "__main__":
     
     if args.debug:
         import ghoust_debug_clients
-        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
+        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=3)
     
     try:
         g.run()
