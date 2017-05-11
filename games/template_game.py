@@ -6,7 +6,7 @@ from threading import Timer
 
 class template_game:
 
-    def __init__(self, number):
+    def __init__(self, number, join_mode="auto")
         print("init")
 
         self.game_number = number
@@ -16,9 +16,10 @@ class template_game:
         self.pregameTimer = None
         self.endTimer = None
         self.gamestatus = "init"
+        self.join_mode = join_mode
 
         # configs
-        self.pregame_t = 30
+        self.pregame_t = 30 if self.join_mode != "auto" else 0
         self.game_t = 120
         self.end_t = 10
 
@@ -41,7 +42,12 @@ class template_game:
 
         # all clients in inactive mode
         for _, e in list(self.players.items()):
-            e.leave()
+            if self.join_mode == "auto":
+                e.join()
+            else:
+                e.leave()
+        self.pre_game_timer()
+
 
     def pre_game_timer(self):
         # configure start timer if 2 or more clients joined
@@ -117,7 +123,7 @@ class template_game:
     def _on_button(self, p, clicktype):
 
         # join current round
-        if self.gamestatus == "pregame" and clicktype == "CLICK":
+        if self.gamestatus == "pregame" and clicktype == "CLICK" and self.join_mode != "auto":
             if p.status == "INACTIVE":
                 p.join()
             elif p.status == "ACTIVE":
@@ -132,6 +138,8 @@ class template_game:
 
     def _join(self, pid, p):
         self.players.update({pid: p})
+        if self.join_mode == "auto":
+            p.join()
         self.pre_game_timer()
 
     def _leave(self, pid, p):

@@ -12,6 +12,7 @@ import colorsys
 # TODO timers
 # winblink should finish before pregame starts because pregame deletes
 # color argument, makes winblink fail
+# TODO win condition without button
 
 
 # one or two teams need to sort themselves to blink in a row
@@ -19,9 +20,9 @@ import colorsys
 # 4-7 players: single team
 # 8-inf players: two teams
 
-class sort_game:
+class ghoust_sort:
 
-    def __init__(self, number):
+    def __init__(self, number, join_mode="auto"):
         print("init")
 
         self.game_number = number
@@ -35,9 +36,11 @@ class sort_game:
         self.winblinkTimer = None
         self.gamestatus = "init"
         self.n_teams = 1
+        self.join_mode = join_mode
+
 
         # configs
-        self.pregame_t = 5
+        self.pregame_t = 30 if self.join_mode != "auto" else 0 
         self.game_t = 120
         self.end_t = 10
         self.blink_t = 5
@@ -65,8 +68,12 @@ class sort_game:
         # all clients in inactive mode
         for _, e in list(self.players.items()):
             e.game_params = dict()
-            e.leave()
-
+            if self.join_mode == "auto":
+                e.join()
+            else:
+                e.leave()
+        self.pre_game_timer()
+    
     def pre_game_timer(self):
         # configure start timer if 4 or more clients joined
         if len(filter_clients(self.players, status="ACTIVE")) >= 4:
@@ -183,7 +190,7 @@ class sort_game:
     def _on_button(self, p, clicktype):
 
         # join current round
-        if self.gamestatus == "pregame" and clicktype == "CLICK":
+        if self.gamestatus == "pregame" and clicktype == "CLICK" and self.join_mode != "auto":
             if p.status == "INACTIVE":
                 p.join()
             elif p.status == "ACTIVE":
@@ -198,11 +205,12 @@ class sort_game:
 
     def _join(self, pid, p):
         self.players.update({pid: p})
+        if self.join_mode == "auto":
+            p.join()
         self.pre_game_timer()
 
     def _leave(self, pid, p):
         self.players.pop(pid)
-        
         self.players_team[p.team].pop(p)
 
         if self.gamestatus == "game":
