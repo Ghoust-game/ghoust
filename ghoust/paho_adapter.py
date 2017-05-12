@@ -118,7 +118,7 @@ class PahoAdapter:
     # callback for paho mqtt, for receiving a message
     def on_message(self, client, userdata, msg):
         topic   = msg.topic.split("/")
-        payload = str(msg.payload)
+        payload = str(msg.payload, 'utf-8')
         if len(topic) < 3:
             print("msg tree too short! debug: " + msg.topic + " " + payload)
             return

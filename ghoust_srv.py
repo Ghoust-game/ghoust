@@ -7,7 +7,6 @@ import argparse
 from ghoust.server import Server as GhoustServer
 from threading     import Timer
 
-
 #############################
 
 
@@ -54,8 +53,7 @@ if __name__ == "__main__":
     
     if args.debug:
         import ghoust_debug_clients
-        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=30)
-
+        debugclients = ghoust_debug_clients.ghoust_debug(num_clients=3)
     try:
         server.start()
     except KeyboardInterrupt:
