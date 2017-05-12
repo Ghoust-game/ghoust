@@ -1,4 +1,7 @@
+import importlib
+
 from socket         import error as socket_error
+
 
 class Server:
     def __init__(self, host, port, client_adapter):
@@ -16,13 +19,13 @@ class Server:
         self.stop_games()
         self.load_games(game_list)
 
-    def stop_games():
+    def stop_games(self):
         if len(self.games) > 0:
             for game in self.games:
                 game.stop()
         self.games = []
 
-    def load_games(game_list):
+    def load_games(self, game_list):
         # start new games
         for i, game_name in enumerate(game_list):
             module     = importlib.import_module("games." + game_name)
@@ -37,9 +40,9 @@ class Server:
         self.client.stop()
 
     def start(self):
-        for i in xrange(3):
+        for i in range(3):
             try:
-                self.client.connect
+                self.client.connect()
                 break
             except socket_error as e:
                 print("socket.error: [{}] {}".format(e.errno, e.strerror))

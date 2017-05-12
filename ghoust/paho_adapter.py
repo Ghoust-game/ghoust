@@ -1,21 +1,27 @@
 import ghoust
-import paho.mqtt.client as mqtt
+import importlib
 
 class PahoAdapter:
     def __init__(self, host, port):
-        self.host    = host
-        self.port    = port
+        self.host      = host
+        self.port      = port
         self.keepalive = 10 
+        self.clients   = dict()
+        self.client    = None
 
-        self.clients = dict()
-        self.client  = mqtt.Client("GHOUST_SRV", clean_session=False)
+    # Connect to remote MQTT paho broker
+    def connect(self):
+        module = importlib.import_module("paho.mqtt.client")
+        self.connect_with_module(module)
+
+    # Connect with the given MQTT paho client module
+    def connect_with_module(self, module):
+        self.client = module.Client("GHOUST_SRV", clean_session=False)
         self.client.will_set("GHOUST/server/status", "EXIT")
 
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
 
-    # Connect to remote MQTT paho broker
-    def connect(self):
         self.client.connect(self.host, self.port, self.keepalive)
 
     # Publishing interface
@@ -87,10 +93,10 @@ class PahoAdapter:
     def handle_button(self, player_id, payload):
         # dirty...
         player = self.find_player_by_id(player_id)
-        if payload == "CLICK" and player.selected_game() 
+        if payload == "CLICK" and player.selected_game():
             player.select_nextgame()
         elif payload == "LONGPRESS":
-            if player.selected_game()
+            if player.selected_game():
                 player.set_game(player.selected_game())
             else:
                 player.reset_game()
@@ -110,9 +116,9 @@ class PahoAdapter:
             self.handle_client(player_id, payload)
         elif topic == "events/button":
             self.handle_button(player_id, payload)
-        elif topic == "events/accelerometer"
+        elif topic == "events/accelerometer":
             self.handle_accelerometer(player_id, payload)
-        elif topic == "events/gestures"
+        elif topic == "events/gestures":
             self.handle_gestures(player_id, payload)
 
     # callback for paho mqtt, for receiving a message
