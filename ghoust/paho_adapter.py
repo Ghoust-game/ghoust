@@ -30,16 +30,6 @@ class PahoAdapter:
     def stop(self):
         self.client.loop_stop()
 
-    # paho mqtt callbacks
-    def on_connect(self, client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
-
-        client.subscribe("GHOUST/server/changegame")
-        client.subscribe("GHOUST/clients/+/status")
-        client.subscribe("GHOUST/clients/+/events/button")
-        client.subscribe("GHOUST/clients/+/events/accelerometer")
-        client.subscribe("GHOUST/clients/+/events/gestures")
-
     def add_player(self, player, client):
         record = {
             "player": player,
@@ -64,6 +54,68 @@ class PahoAdapter:
         record = self.find_record_by_player_id(player.id)
         return record["client"]
 
+    # callback for paho mqtt, when connecting
+    def on_connect(self, client, userdata, flags, rc):
+        print("Connected with result code " + str(rc))
+
+        client.subscribe("GHOUST/server/changegame")
+        client.subscribe("GHOUST/clients/+/status")
+        client.subscribe("GHOUST/clients/+/events/button")
+        client.subscribe("GHOUST/clients/+/events/accelerometer")
+        client.subscribe("GHOUST/clients/+/events/gestures")
+
+    def handle_gamechange(self, game_list):
+        self.server.setgames(payload.split(","))
+
+    def handle_client(self, player_id, payload):
+        if payload == "CONNECT":
+            player = Player(player_id, self)
+            self.add_player(player, client)
+            if self.count_games() == 1:
+                player.set_game(self.games[0])
+        if payload == "DISCONNECT":
+            if self.clients.has_key(player_id):
+                player = self.find_player_by_id(player_id)
+                self.delete_player(player)
+
+    def find_game_by_id(self, game_id):
+        return self.games[game_id]
+
+    def count_games(self):
+        return len(self.games)
+
+    def handle_button(self, player_id, payload):
+        # dirty...
+        player = self.find_player_by_id(player_id)
+        if payload == "CLICK" and player.selected_game() 
+            player.select_nextgame()
+        elif payload == "LONGPRESS":
+            if player.selected_game()
+                player.set_game(player.selected_game())
+            else:
+                player.reset_game()
+        else:
+            player.game._on_button(player, payload)
+
+    def handle_accelerometer(self, player_id, payload):
+        player = self.find_player_by_id(player_id)
+        player.game._on_accelerometer(player, payload)
+
+    def handle_gestures(self, player_id, payload):
+        player = self.find_player_by_id(player_id)
+        player.game._on_gestures(player, payload)
+
+    def handle_player_message(self, topic, player_id, payload):
+        if topic == "status":
+            self.handle_client(player_id, payload)
+        elif topic == "events/button":
+            self.handle_button(player_id, payload)
+        elif topic == "events/accelerometer"
+            self.handle_accelerometer(player_id, payload)
+        elif topic == "events/gestures"
+            self.handle_gestures(player_id, payload)
+
+    # callback for paho mqtt, for receiving a message
     def on_message(self, client, userdata, msg):
         topic   = msg.topic.split("/")
         payload = str(msg.payload)
@@ -73,44 +125,9 @@ class PahoAdapter:
 
         if topic[1] == "server":
             if topic[2] == "changegame":
-                self.server.setgames(payload.split(","))
+                self.handle_gamechange(payload.split(","))
             return
 
         player_id = topic[2]
-        subtree   = topic[3]
-        if subtree == "status":
-            if payload == "CONNECTED":
-                player = Player(player_id, self)
-                self.add_player(player, client)
-                if len(self.games) == 1:
-                    player.set_game(self.games[0])
-
-            elif payload == "DISCONNECTED" and self.clients.has_key(player_id):
-                player = self.find_player_by_id(player_id)
-                self.delete_player(player)
-
-        elif subtree == "events":
-            # pass message to game engine callbacks
-            elem   = topic[4]
-            player = self.find_player_by_id(player_id)
-
-            if player.status == "SELECT_GAME":
-                if elem == "button":
-                    if payload == "CLICK":
-                        # dirty...
-                        player.select_game(
-                            (player.select_game_n + 1) % len(self.games))
-                    elif payload == "LONGPRESS":
-                        player.set_game(self.games[player.select_game_n])
-            else:
-                if elem == "button":
-                    # Leave game
-                    if payload == "LONGPRESS" and len(self.games) > 1:
-                        player.set_game(None)
-                    else:    # let game know of button press
-                        player.game._on_button(player, payload)
-                elif elem == "accelerometer":
-                    player.game._on_accelerometer(player, payload)
-                elif elem == "gestures":
-                    player.game._on_gestures(player, payload)
+        self.handle_player_message("/".join(topic[3:]), player_id, payload)
 

@@ -3,84 +3,10 @@
 import importlib
 import time
 import argparse
-import ghoust
 
-from socket    import error as socket_error
-from threading import Timer
+from ghoust.server import Server as GhoustServer
+from threading     import Timer
 
-
-class GhoustServer:
-    def __init__(self, game_list, host, port):
-        self.client = PahoAdapter(host, port)
-
-        # config parameters
-        self.max_games = 4
-
-        # game modules
-        self.games = []
-        self.setgames(game_list)
-
-    #### game functions ####
-
-    def setgames(self, game_list):
-        # stop old games
-        if len(self.games) > 0:
-            for game in self.games:
-                game.stop()
-
-        self.games = []
-        # start new games
-        for i, g in enumerate(game_list):
-            m = importlib.import_module("games." + g)
-            C = getattr(m, g)
-            game = C(i)
-            game.setup()
-            self.games.append(game)
-
-    # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
-    # led val: [0-1023, 0-1023, 0-10123], [r, g, b]
-    # parameter: ["motor", "buzzer", "led"]
-
-    def _game_config(self, game, parameter, val=None, preset=None):
-        if not (0 <= game <= 4) or parameter not in ["motor", "buzzer", "led"]:
-            print("game number or parameter not valid")
-            return
-        topic = "GHOUST/game/{}/{}".format(game, parameter)
-
-        if preset != None:
-            if not (0 <= int(preset) <= 9):
-                print("vibrate preset not in range")
-            self.client.publish(topic, "PRESET:" + preset)
-
-        if val != None:
-            if (not (0 <= val[0] <= 1023) or
-                not (0 <= val[1] <= 1023) or
-                    (parameter == "led" and not(0 <= val[2] <= 1023))):
-                print("vibrate values not in range")
-            fstring = "RAW:{:04},{:04}"
-            if parameter == "led":
-                fstring = "RAW:{:04},{:04},{:04}"
-            self.client.publish(topic, fstring.format(*val))
-
-    def stop(self):
-        for game in self.games:
-            game.stop()
-        self.client.stop()
-
-    def start(self):
-        for i in xrange(3):
-            try:
-                self.client.connect
-                break
-            except socket_error as e:
-                print("socket.error: [{}] {}".format(e.errno, e.strerror))
-                if i == 2:
-                    raise e
-                print("retrying after 10s")
-                time.sleep(10)
-
-        self.client.publish("GHOUST/server/status", "ACTIVE")
-        self.client.start()
 
 #############################
 
@@ -123,7 +49,8 @@ def build_arguments_parser():
 if __name__ == "__main__":
     parser = build_arguments_parser()
     args   = parser.parse_args()
-    server = GhoustServer(args.games, args.host, args.port)
+    server = GhoustServer(args.host, args.port, PahoAdapter)
+    server.load_games(args.games)
     
     if args.debug:
         import ghoust_debug_clients
