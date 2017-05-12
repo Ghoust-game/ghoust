@@ -1,4 +1,4 @@
-#GHOUST
+# GHOUST
 
 This repository is about the actual GAME
 
@@ -20,6 +20,13 @@ A client has no idea that it is playing a game but
 is blinking leds, playing sounds, vibrating 
 the motor... whatever the gameserver tells it to do.
 
-
 Want to know more?
 Check out the [wiki](https://github.com/Ghoust-game/ghoust/wiki)
+
+## Debugging on the Raspberry Pi
+
+    # Make sure lighttpd is running
+    $ sudo systemctl status lighttpd
+
+    # See all MQTT messages
+    $ mosquitto_sub -t "#" -v
