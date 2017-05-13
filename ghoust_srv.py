@@ -48,7 +48,7 @@ def build_arguments_parser():
 if __name__ == "__main__":
     parser = build_arguments_parser()
     args   = parser.parse_args()
-    server = GhoustServer(args.host, args.port, PahoAdapter)
+    server = GhoustServer(PahoAdapter(args.host, args.port))
     server.load_games(args.games)
     
     if args.debug:
