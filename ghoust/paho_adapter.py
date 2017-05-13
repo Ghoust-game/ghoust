@@ -1,5 +1,7 @@
 import ghoust
 import importlib
+import logging
+
 
 class PahoAdapter:
     def __init__(self, host, port):
@@ -8,6 +10,11 @@ class PahoAdapter:
         self.keepalive = 10 
         self.clients   = dict()
         self.client    = None
+        self.setup_logger()
+
+    def setup_logger(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.INFO)
 
     # Connect to remote MQTT paho broker
     def connect(self):
@@ -62,7 +69,7 @@ class PahoAdapter:
 
     # callback for paho mqtt, when connecting
     def on_connect(self, client, userdata, flags, rc):
-        print("Connected with result code " + str(rc))
+        self.logger.info("Connected with result code " + str(rc))
 
         client.subscribe("GHOUST/server/changegame")
         client.subscribe("GHOUST/clients/+/status")
