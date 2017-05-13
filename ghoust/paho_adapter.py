@@ -1,6 +1,7 @@
 import ghoust
 import importlib
 import logging
+from .player       import Player
 
 
 class PahoAdapter:
@@ -48,7 +49,7 @@ class PahoAdapter:
             "player": player,
             "client": client
         }
-        player_id = player.id
+        player_id = player.id()
         self.clients.update({player_id: record})
 
     def find_record_by_player_id(self, player_id):
@@ -59,7 +60,7 @@ class PahoAdapter:
         return data["player"]
 
     def delete_player(self, player):
-        self.clients.pop(player.id)
+        self.clients.pop(player.id())
         player.set_game(None)
         del player
 
@@ -80,14 +81,14 @@ class PahoAdapter:
     def handle_gamechange(self, game_list):
         self.server.setgames(game_list)
 
-    def handle_client(self, player_id, payload):
+    def handle_client(self, client, player_id, payload):
         if payload == "CONNECT":
             player = Player(player_id, self)
             self.add_player(player, client)
             if self.count_games() == 1:
                 player.set_game(self.games[0])
         if payload == "DISCONNECT":
-            if self.clients.has_key(player_id):
+            if player_id in self.clients.keys():
                 player = self.find_player_by_id(player_id)
                 self.delete_player(player)
 
@@ -95,7 +96,10 @@ class PahoAdapter:
         return self.games[game_id]
 
     def count_games(self):
-        return len(self.games)
+        return len(self.server.games)
+
+    def count_players(self):
+        return len(self.clients.keys())
 
     def handle_button(self, player_id, payload):
         # dirty...
@@ -118,9 +122,9 @@ class PahoAdapter:
         player = self.find_player_by_id(player_id)
         player.game._on_gestures(player, payload)
 
-    def handle_player_message(self, topic, player_id, payload):
+    def handle_player_message(self, client, topic, player_id, payload):
         if topic == "status":
-            self.handle_client(player_id, payload)
+            self.handle_client(client, player_id, payload)
         elif topic == "events/button":
             self.handle_button(player_id, payload)
         elif topic == "events/accelerometer":
@@ -143,5 +147,5 @@ class PahoAdapter:
             return
 
         player_id = topic[2]
-        self.handle_player_message("/".join(topic[3:]), player_id, payload)
+        self.handle_player_message(client, "/".join(topic[3:]), player_id, payload)
 

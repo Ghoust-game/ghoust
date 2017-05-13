@@ -168,6 +168,30 @@ class PahoAdapterTestCase(unittest.TestCase):
         message = FakeMessage("GHOUST/server/changegame", "ghoust_game")
         self.used_adapter.on_message(self.paho_client(), None, message)
 
+    def test_should_handle_client_connect_event(self):
+        self.do_connection()
+        server = Server(self.used_adapter)
+
+        message = FakeMessage("GHOUST/clients/1/status", "CONNECT")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+
+        self.assertEqual(1, self.used_adapter.count_players()) 
+
+        player = self.used_adapter.find_player_by_id("1")
+        self.assertIsNotNone(player)
+        self.assertEqual("1", player.id())
+
+    def test_should_handle_client_disconnect_event(self):
+        self.do_connection()
+        server = Server(self.used_adapter)
+
+        message = FakeMessage("GHOUST/clients/1/status", "CONNECT")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+        self.assertEqual(1, self.used_adapter.count_players()) 
+
+        message = FakeMessage("GHOUST/clients/1/status", "DISCONNECT")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+        self.assertEqual(0, self.used_adapter.count_players()) 
 
 
 if __name__ == '__main__':

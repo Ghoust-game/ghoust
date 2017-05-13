@@ -23,7 +23,7 @@ class Player:
     def selected_game(self):
         if self.status == "SELECT_GAME":
             return self.adapter.find_game_by_id(self.select_game_n)
-        else
+        else:
             return None
 
     def select_nextgame(self):
@@ -115,7 +115,7 @@ class Player:
         self.client.publish(self.str + "/config/accel_warn", str(warn))
 
     def reset_game(self):
-        if self.adapter.count_games() > 1
+        if self.adapter.count_games() > 1:
             self.set_game(None)
 
     def set_game(self, game_p):

@@ -6,8 +6,9 @@ Further information is available from the ghoust github repository:
   https://github.com/Ghoust-game/ghoust
 """
 
-__all__ = ["Server", "PahoAdapter"]
+__all__ = ["Server", "PahoAdapter", "Player"]
 
 
-from .paho_adapter import PahoAdapter
 from .server       import Server 
+from .player       import Player
+from .paho_adapter import PahoAdapter
