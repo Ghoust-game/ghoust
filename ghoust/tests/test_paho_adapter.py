@@ -1,6 +1,6 @@
 import unittest
 
-from .. import paho_adapter
+from ghoust import PahoAdapter
 
 class FakePahoModule:
     def __init__(self):
@@ -44,7 +44,7 @@ class FakePahoModule:
 
 class PahoAdapterTestCase(unittest.TestCase):
     def setUp(self):
-        self.used_adapter = paho_adapter.PahoAdapter("127.0.0.1", 123)
+        self.used_adapter = PahoAdapter("127.0.0.1", 123)
         self.fake_module  = FakePahoModule()
 
     def test_connection(self):
