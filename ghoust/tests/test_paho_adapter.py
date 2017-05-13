@@ -2,7 +2,7 @@ import unittest
 import logging
 import io
 
-from ghoust   import PahoAdapter
+from ghoust   import PahoAdapter, Server
 
 class FakeMessage:
     def __init__(self, topic, payload):
@@ -160,6 +160,13 @@ class PahoAdapterTestCase(unittest.TestCase):
                          str(message.payload, "utf-8") + "\n"
 
         self.assertEqual(expected_error, self.logger_content())
+
+    def test_should_handle_changegame_event(self):
+        self.do_connection()
+        server = Server(self.used_adapter)
+
+        message = FakeMessage("GHOUST/server/changegame", "ghoust_game")
+        self.used_adapter.on_message(self.paho_client(), None, message)
 
 
 

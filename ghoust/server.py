@@ -4,8 +4,9 @@ from socket         import error as socket_error
 
 
 class Server:
-    def __init__(self, host, port, client_adapter):
-        self.client = client_adapter(host, port)
+    def __init__(self, client_adapter):
+        self.client = client_adapter
+        self.client.server = self
 
         # config parameters
         self.max_games = 4
@@ -28,7 +29,7 @@ class Server:
     def load_games(self, game_list):
         # start new games
         for i, game_name in enumerate(game_list):
-            module     = importlib.import_module("games." + game_name)
+            module     = importlib.import_module("ghoust.games." + game_name)
             game_class = getattr(module, game_name)
             game       = game_class(i)
             game.setup()

@@ -78,7 +78,7 @@ class PahoAdapter:
         client.subscribe("GHOUST/clients/+/events/gestures")
 
     def handle_gamechange(self, game_list):
-        self.server.setgames(payload.split(","))
+        self.server.setgames(game_list)
 
     def handle_client(self, player_id, payload):
         if payload == "CONNECT":
