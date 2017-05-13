@@ -4,6 +4,11 @@ import io
 
 from ghoust   import PahoAdapter
 
+class FakeMessage:
+    def __init__(self, topic, payload):
+        self.topic = topic
+        self.payload = bytes(payload, "utf-8")
+
 class FakePahoClient:
     def __init__(self, client_id, clean_session, userdata, protocol, transport):
         self.client_id     = client_id
@@ -143,7 +148,19 @@ class PahoAdapterTestCase(unittest.TestCase):
         self.assertEqual("GHOUST/clients/+/events/gestures", self.paho_client().subscriptions[4])
         
         self.assertEqual("Connected with result code 10\n", self.logger_content())
-        
+    
+    def test_should_handle_throw_an_error_on_short_message(self):
+        self.do_connection()
+        self.used_adapter.start()
+
+        message = FakeMessage("GHOUST", "stuff")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+        expected_error = "msg tree too short! debug: " + \
+                         message.topic + " " + \
+                         str(message.payload, "utf-8") + "\n"
+
+        self.assertEqual(expected_error, self.logger_content())
+
 
 
 if __name__ == '__main__':
