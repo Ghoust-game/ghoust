@@ -4,8 +4,8 @@ import importlib
 import time
 import argparse
 
-from ghoust.server import Server as GhoustServer
-from threading     import Timer
+from ghoust     import Server as GhoustServer, PahoAdapter
+from threading  import Timer
 
 #############################
 
