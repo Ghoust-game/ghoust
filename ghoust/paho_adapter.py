@@ -65,7 +65,7 @@ class PahoAdapter:
         del player
 
     def find_client_for_player(self, player):
-        record = self.find_record_by_player_id(player.id)
+        record = self.find_record_by_player_id(player.id())
         return record["client"]
 
     # callback for paho mqtt, when connecting
@@ -86,17 +86,17 @@ class PahoAdapter:
             player = Player(player_id, self)
             self.add_player(player, client)
             if self.count_games() == 1:
-                player.set_game(self.games[0])
+                player.set_game(self.find_game_by_id(0))
         if payload == "DISCONNECT":
             if player_id in self.clients.keys():
                 player = self.find_player_by_id(player_id)
                 self.delete_player(player)
 
     def find_game_by_id(self, game_id):
-        return self.games[game_id]
+        return self.server.find_game_by_id(game_id)
 
     def count_games(self):
-        return len(self.server.games)
+        return self.server.count_games()
 
     def count_players(self):
         return len(self.clients.keys())

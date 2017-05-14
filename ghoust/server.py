@@ -20,8 +20,14 @@ class Server:
         self.stop_games()
         self.load_games(game_list)
 
+    def find_game_by_id(self, game_id):
+        return self.games[game_id]
+
+    def count_games(self):
+        return len(self.games)
+
     def stop_games(self):
-        if len(self.games) > 0:
+        if self.count_games() > 0:
             for game in self.games:
                 game.stop()
         self.games = []

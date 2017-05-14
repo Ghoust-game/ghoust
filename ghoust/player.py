@@ -30,7 +30,7 @@ class Player:
         next_game_idx = (self.select_game_n + 1) % adapter.count_games()
         self.select_game(next_game_idx)
 
-    def client():
+    def client(self):
         return self.adapter.find_client_for_player(self)
 
     def setname(self, name):
@@ -111,8 +111,8 @@ class Player:
 
     def set_accel_thresh(self, out, warn):
 
-        self.client.publish(self.str + "/config/accel_out", str(out))
-        self.client.publish(self.str + "/config/accel_warn", str(warn))
+        self.client().publish(self.basestring + "/config/accel_out", str(out))
+        self.client().publish(self.basestring + "/config/accel_warn", str(warn))
 
     def reset_game(self):
         if self.adapter.count_games() > 1:
@@ -142,12 +142,12 @@ class Player:
         if parameter not in ["motor", "buzzer", "led"]:
             print("parameter not valid")
             return
-        topic = self.str + "/config/{}".format(parameter)
+        topic = self.basestring + "/config/{}".format(parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
                 print("vibrate preset not in range")
-            self.client.publish(topic, "PRESET:{}".format(preset))
+            self.client().publish(topic, "PRESET:{}".format(preset))
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
@@ -161,4 +161,4 @@ class Player:
                 if duration_led != None:
                     fstring = "RAW:{:04},{:04},{:04},{:04}"
                     val.append(duration_led)
-            self.client.publish(topic, fstring.format(*val))
+            self.client().publish(topic, fstring.format(*val))
