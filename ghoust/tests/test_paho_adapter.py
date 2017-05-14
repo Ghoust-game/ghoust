@@ -4,6 +4,31 @@ import io
 
 from ghoust   import PahoAdapter, Server
 
+class FakeGame:
+    def __init__(self):
+        self.got_accelerometer = False
+        self.got_button = False
+        self.got_gestures = False
+        self.got_handler_join = False
+        self.got_portrait_up = False
+        self.got_warnshock = False
+        self.got_outshock = False
+
+    def _join(self, player_id, player):
+        self.got_handler_join = True
+
+    def _on_accelerometer(self, player, value):
+        self.got_accelerometer = True
+        if "WARNSHOCK" in value:
+            self.got_warnshock = True
+        elif "OUTSHOCK" in value:
+            self.got_outshock = True
+
+    def _on_gestures(self, player, payload):
+        self.got_gestures = True
+        if "PORTRAIT_UP" == payload:
+            self.got_portrait_up = True
+
 class FakeMessage:
     def __init__(self, topic, payload):
         self.topic = topic
@@ -184,6 +209,7 @@ class PahoAdapterTestCase(unittest.TestCase):
     def register_player(self):
         self.do_connection()
         self.server = Server(self.used_adapter)
+        self.server.setgames(["ghoust_game", "ghoust_sort", "ghoust_teamgame"])
 
         message = FakeMessage("GHOUST/server/changegame", "ghoust_game")
         self.used_adapter.on_message(self.paho_client(), None, message)
@@ -194,12 +220,70 @@ class PahoAdapterTestCase(unittest.TestCase):
 
         self.player = self.used_adapter.find_player_by_id("1")
 
-    def test_should_handle_button_click(self):
-        self.register_player()
-
+    def do_button_click(self):
         message = FakeMessage("GHOUST/clients/1/events/button", "CLICK")
         self.used_adapter.on_message(self.paho_client(), None, message)
 
+    def do_button_longpress(self):
+        message = FakeMessage("GHOUST/clients/1/events/button", "LONGPRESS")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+
+    def test_should_handle_button_click(self):
+        self.register_player()
+        self.assertEqual("ghoust_game", self.player.game.__class__.__name__)
+
+        self.do_button_click()
+        self.assertEqual("ghoust_game", self.player.game.__class__.__name__)
+
+    def do_warnshock(self):
+        # Based on documentation:
+        # https://github.com/Ghoust-game/docs/wiki/MQTT#ghoustclientsclientideventsaccelerometer
+        message = FakeMessage("GHOUST/clients/1/events/accelerometer", "WARNSHOCK (12.0)")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+
+    def do_outshock(self):
+        # Based on documentation:
+        # https://github.com/Ghoust-game/docs/wiki/MQTT#ghoustclientsclientideventsaccelerometer
+        message = FakeMessage("GHOUST/clients/1/events/accelerometer", "OUTSHOCK (2.0)")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+
+    def setup_fakegame(self):
+        self.register_player()
+        self.fake_game = FakeGame()
+        self.server.games = [self.fake_game]
+        self.player.set_game(self.fake_game)
+        self.assertEqual("FakeGame", self.player.game.__class__.__name__)
+
+    def test_should_handle_accelerometer_outshock(self):
+        self.setup_fakegame()
+        self.do_outshock()
+        self.assertEqual(False, self.fake_game.got_button)
+        self.assertEqual(False, self.fake_game.got_gestures)
+        self.assertEqual(True, self.fake_game.got_accelerometer)
+        self.assertEqual(True, self.fake_game.got_outshock)
+
+    def test_should_handle_accelerometer_warnshock(self):
+        self.setup_fakegame()
+        self.do_warnshock()
+        self.assertEqual(False, self.fake_game.got_button)
+        self.assertEqual(False, self.fake_game.got_gestures)
+        self.assertEqual(True, self.fake_game.got_accelerometer)
+        self.assertEqual(True, self.fake_game.got_warnshock)
+
+    def do_portrait_up(self):
+        # Based on documentation:
+        # https://github.com/Ghoust-game/docs/wiki/MQTT#ghoustclientsclientideventsgestures
+        message = FakeMessage("GHOUST/clients/1/events/gestures", "PORTRAIT_UP")
+        self.used_adapter.on_message(self.paho_client(), None, message)
+
+    def test_should_handle_generic_gestures(self):
+        self.setup_fakegame()
+        self.do_portrait_up()
+        self.assertEqual(False, self.fake_game.got_button)
+        self.assertEqual(True, self.fake_game.got_gestures)
+        self.assertEqual(False, self.fake_game.got_accelerometer)
+        self.assertEqual(True,  self.fake_game.got_portrait_up)
+        self.assertEqual(False, self.fake_game.got_warnshock)
 
 
 if __name__ == '__main__':
