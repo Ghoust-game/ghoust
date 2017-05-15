@@ -12,11 +12,12 @@ from ghoust_player import Player
 
 class GHOUST:
 
-    def __init__(self, game_list, host, port):
+    def __init__(self, game_list, host, port, join_mode='auto'):
 
         self.clients = dict()
         self.host = host
         self.port = port
+        self.join_mode = join_mode
 
         self.client = mqtt.Client("GHOUST_SRV", clean_session=False)
         self.client.will_set("GHOUST/server/status", "EXIT")
@@ -45,6 +46,9 @@ class GHOUST:
         self.games = []
         # start new games
         gstring = []
+        if self.join_mode == "auto":
+            game_list = game_list[:1]
+
         for i, g in enumerate(game_list):
             m = importlib.import_module("games." + g)
             C = getattr(m, g)
@@ -52,6 +56,11 @@ class GHOUST:
             game.setup()
             self.games.append(game)
             gstring.append("{}:{}".format(i, g))
+        
+        if self.join_mode == "auto":
+            for _,p in self.clients.items():
+                p.set_game(self.games[0])
+
         self.activegames = ','.join(gstring)
         self.client.publish("GHOUST/server/status/activegames", self.activegames, retain=True)
 
