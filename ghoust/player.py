@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 class Player:
-    def __init__(self, pid, mqtt_client, name="", game=None):
-        self.pid = pid
-        self.client = mqtt_client
+    def __init__(self, pid, mqtt_adapter, name="", game=None):
+        self.pid     = pid
+        self.adapter = mqtt_adapter
         self.team = 0
         self.status = "SELECT_GAME"
-        self.str = "GHOUST/clients/{0}".format(self.pid)
+        self.basestring = "GHOUST/clients/{0}".format(self.pid)
         self.game = game
         self.select_game(0)
         self.go_color = [0, 1023, 0]
@@ -17,15 +17,28 @@ class Player:
     def __repr__(self):
         return str(self.pid)
 
+    def id(self):
+        return self.pid
+
+    def selected_game(self):
+        if self.status == "SELECT_GAME":
+            return self.adapter.find_game_by_id(self.select_game_n)
+        else:
+            return None
+
+    def select_nextgame(self):
+        next_game_idx = (self.select_game_n + 1) % adapter.count_games()
+        self.select_game(next_game_idx)
+
+    def client(self):
+        return self.adapter.find_client_for_player(self)
+
     def setname(self, name):
         self.name = name
 
-    def setteam(self, n, color = None):
+    def setteam(self, n):
         print(self.pid + ": team " + str(n))
         self.team = n
-        if color != None:
-            self.go_color = color
-
 
     def warn(self):
         print(self.pid + ": warn")
@@ -46,7 +59,6 @@ class Player:
         self._config("led", val=[1023, 0, 0])
         self._config("motor", val=[1023, 3000])
         self._config("buzzer", preset=3)
-
 
     def timeout(self):
         print(self.pid + ": timeout")
@@ -99,8 +111,12 @@ class Player:
 
     def set_accel_thresh(self, out, warn):
 
-        self.client.publish(self.str + "/config/accel_out", str(out))
-        self.client.publish(self.str + "/config/accel_warn", str(warn))
+        self.client().publish(self.basestring + "/config/accel_out", str(out))
+        self.client().publish(self.basestring + "/config/accel_warn", str(warn))
+
+    def reset_game(self):
+        if self.adapter.count_games() > 1:
+            self.set_game(None)
 
     def set_game(self, game_p):
         if self.game == game_p:
@@ -126,12 +142,12 @@ class Player:
         if parameter not in ["motor", "buzzer", "led"]:
             print("parameter not valid")
             return
-        topic = self.str + "/config/{}".format(parameter)
+        topic = self.basestring + "/config/{}".format(parameter)
 
         if preset != None:
             if not (0 <= int(preset) <= 9):
                 print("vibrate preset not in range")
-            self.client.publish(topic, "PRESET:{}".format(preset))
+            self.client().publish(topic, "PRESET:{}".format(preset))
 
         if val != None:
             if (not (0 <= val[0] <= 1023) or
@@ -145,5 +161,4 @@ class Player:
                 if duration_led != None:
                     fstring = "RAW:{:04},{:04},{:04},{:04}"
                     val.append(duration_led)
-            self.client.publish(topic, fstring.format(*val))
-
+            self.client().publish(topic, fstring.format(*val))
