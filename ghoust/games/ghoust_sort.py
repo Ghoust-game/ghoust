@@ -211,7 +211,9 @@ class ghoust_sort:
 
     def _leave(self, pid, p):
         self.players.pop(pid)
-        self.players_team[p.team].pop(p)
+        if p.team in self.players_team:
+            if p in self.players_team[p.team]:
+                self.players_team[p.team].remove(p)
 
         if self.gamestatus == "game":
             self.check_win()
