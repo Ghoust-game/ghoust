@@ -53,11 +53,17 @@ class PahoAdapter:
         self.clients.update({player_id: record})
 
     def find_record_by_player_id(self, player_id):
-        return self.clients[player_id]
+        if player_id in self.clients:
+            return self.clients[player_id]
+        else:
+            return None
 
     def find_player_by_id(self, player_id):
         data = self.find_record_by_player_id(player_id)
-        return data["player"]
+        if data:
+            return data["player"]
+        else:
+            return None
 
     def delete_player(self, player):
         self.clients.pop(player.id())
