@@ -37,6 +37,7 @@ class ghoust_slowpoke:
         # remove player with biggest average between shocks
         active = filter_clients(self.players, status="GO")
         
+        # TODO  if avg same (nobody moves)
         maxavg = 0
         maxavg_p = None
         for p in active:
@@ -45,13 +46,12 @@ class ghoust_slowpoke:
             # than stopping and still having good avg
             tstamps.append(datetime.now())
             dtstamps = [(tstamps[i+1]-tstamps[i]).total_seconds() for i in range(len(tstamps)-1)]
-            avg = sum(dtstamps)/self.len_deque
+            avg = sum(dtstamps)/len(dtstamps)
             if avg > maxavg:
                 maxavg = avg
                 maxavg_p = p
         
         maxavg_p.out()
-        print("player {} out, max avg: {}".format(maxavg_p, maxavg))
         self.start_timers(slow = True)
         self.check_win()
         
@@ -91,6 +91,10 @@ class ghoust_slowpoke:
         self.pregameTimer = None
         # all joined clients in go mode
         for e in filter_clients(self.players, status="ACTIVE"):
+            tstamps = e.game_params["tstamps"]
+            tstamps.clear()
+            tstamps.append(datetime.now())
+            e.set_accel_thresh(3,4)
             e.start()
 
         # set timer
@@ -162,7 +166,7 @@ class ghoust_slowpoke:
                 p.leave()
             self.pre_game_timer()
 
-    def _on_gestures(self, p):
+    def _on_gestures(self, p, payload):
         pass # not used
 
     def _join(self, pid, p):
