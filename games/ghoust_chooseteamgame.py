@@ -78,6 +78,9 @@ class ghoust_chooseteamgame:
         self.pre_game_timer()
 
     def pre_game_timer(self):
+        if self.gamestatus != "pregame":
+            return
+
         # configure start timer if 2 or more clients joined
         if len(filter_clients(self.players, status="ACTIVE")) > 1:
             self.start_timers(pregame=True)

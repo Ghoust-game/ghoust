@@ -26,15 +26,10 @@ class Player:
         if color != None:
             self.go_color = color
 
-
     def warn(self):
         print(self.pid + ": warn")
-
-        # vibrate and light softly
-        #self._config("led", preset = 2)
+        
         self._config("led", val=[1023, 1023, 0], duration_led=500)
-        self._config("motor", preset=2)
-        #self._config("buzzer", preset = 2)
 
     def out(self):
         print(self.pid + ": out")
@@ -42,7 +37,6 @@ class Player:
         # reset go color to green
         self.go_color = [0, 1023, 0]
     
-        # vibrate hard, light red, set inactive
         self._config("led", val=[1023, 0, 0])
         self._config("motor", val=[1023, 3000])
         self._config("buzzer", preset=3)
@@ -52,52 +46,52 @@ class Player:
         print(self.pid + ": timeout")
         self.status = "INACTIVE"
 
-        # timeout action
         self._config("led", val=[1023, 1023, 0], duration_led=1000)
         self._config("motor", preset=1)
 
     def abort(self):
         print(self.pid + ": abort")
         self.status = "INACTIVE"
-        # light orange, weirdly vibrate
+        
         self._config("led", val=[1023, 1023, 0], duration_led=1000)
         self._config("motor", preset=1)
 
     def join(self):
         print(self.pid + ": join game ", self.game.game_number)
         self.status = "ACTIVE"
-        # action?
+        
         self._config("motor", preset=1)
         self._config("led", val=[0,0,0])
 
     def leave(self):
         print(self.pid + ": leave ", self.game.game_number)
         self.status = "INACTIVE"
-        # action ?
+        
         self._config("motor", preset=1)
         self._config("led", val = [0,0,0])
-        #self._config("buzzer", preset = 1)
 
     def start(self):
         print(self.pid + ": start")
         self.status = "GO"
-        self._config("motor", val=[1023, 750])
+        
         self._config("led", val=self.go_color)
+        self._config("motor", val=[1023, 750])
         self._config("buzzer", preset=2)
 
     def win(self):
         print(self.pid + ": win")
-        # vibrate partily, light green
+        
         self._config("motor", preset=3)
         self._config("led", preset=1)
         self._config("buzzer", preset=1)
 
     def select_game(self, n):
+        print(self.pid + ": select game " + str(n))
         self.select_game_n = n
-        # print "player ",self.pid,": select game, flash ",n
         # TODO flash gamenumber periodically
 
     def set_accel_thresh(self, out, warn):
+        print(self.pid + ": set acceleration threshold")
 
         self.client.publish(self.str + "/config/accel_out", str(out))
         self.client.publish(self.str + "/config/accel_warn", str(warn))

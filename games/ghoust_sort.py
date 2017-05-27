@@ -75,6 +75,9 @@ class ghoust_sort:
         self.pre_game_timer()
     
     def pre_game_timer(self):
+        if self.gamestatus != "pregame":
+            return
+
         # configure start timer if 4 or more clients joined
         if len(filter_clients(self.players, status="ACTIVE")) >= 4:
             self.start_timers(pregame=True)
