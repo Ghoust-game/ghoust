@@ -8,6 +8,7 @@ import pkgutil
 from socket import error as socket_error
 from threading import Timer
 
+from api import API
 from ghoust_player import Player
 
 class GHOUST:
@@ -35,7 +36,9 @@ class GHOUST:
             if 'games.' in m:
                 gstring.append(m[6:])
         self.gamemodes = ','.join(gstring)
-        
+
+        self.api = API(self)
+
     #### game functions ####
 
     def setgames(self, game_list):
@@ -56,7 +59,7 @@ class GHOUST:
             game.setup()
             self.games.append(game)
             gstring.append("{}:{}".format(i, g))
-        
+
         if self.join_mode == "auto":
             for _,p in self.clients.items():
                 p.set_game(self.games[0])
@@ -163,6 +166,10 @@ class GHOUST:
         self.client.loop_stop()
 
     def run(self):
+        # Start API
+        self.api.run(threaded=True, debug=False)
+
+        # Start Ghoust
         for i in range(3):
             try:
                 self.client.connect(self.host, self.port, 10)
@@ -204,15 +211,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     g = GHOUST(args.games, args.host, args.port)
-    
+
     if args.debug:
         import ghoust_debug_clients
         debugclients = ghoust_debug_clients.ghoust_debug(num_clients=3)
-    
+
     try:
         g.run()
     except KeyboardInterrupt:
+        pass
+    except:
+        raise
+    finally:
         g.stop()
-
-    if args.debug:
-        debugclients.stop()
+        if args.debug:
+            debugclients.stop()
