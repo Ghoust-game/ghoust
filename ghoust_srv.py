@@ -30,12 +30,13 @@ class GHOUST:
 
         # game modules
         self.games = []
+        self.activegames = []
         self.setgames(game_list)
-        gstring = []
+
+        self.gamemodes = []
         for i,m, ispkg in pkgutil.walk_packages(path="games/."):
             if 'games.' in m:
-                gstring.append(m[6:])
-        self.gamemodes = ','.join(gstring)
+                self.gamemodes.append(m[6:])
 
         self.api = API(self)
 
@@ -47,8 +48,9 @@ class GHOUST:
             g.stop()
 
         self.games = []
+        self.activegames = []
+
         # start new games
-        gstring = []
         if self.join_mode == "auto":
             game_list = game_list[:1]
 
@@ -58,14 +60,11 @@ class GHOUST:
             game = C(i)
             game.setup()
             self.games.append(game)
-            gstring.append("{}:{}".format(i, g))
+            self.activegames.append("{}:{}".format(i, g))
 
         if self.join_mode == "auto":
             for _,p in self.clients.items():
                 p.set_game(self.games[0])
-
-        self.activegames = ','.join(gstring)
-        self.client.publish("GHOUST/server/status/activegames", self.activegames, retain=True)
 
     # buzzer, vibro val: [0-1023, 0-1023], [duration (ms), frequency (hz)]
     # led val: [0-1023, 0-1023, 0-10123], [r, g, b]
@@ -181,9 +180,11 @@ class GHOUST:
                 print("retrying after 10s")
                 time.sleep(10)
 
+        mqtt_game_modes_list = ','.join(self.gamemodes)
+        mqtt_active_games = ','.join(self.activegames)
         self.client.publish("GHOUST/server/status", "ACTIVE")
-        self.client.publish("GHOUST/server/status/activegames", self.activegames, retain=True)
-        self.client.publish("GHOUST/server/status/gamemodes", self.gamemodes, retain=True)
+        self.client.publish("GHOUST/server/status/activegames", mqtt_active_games, retain=True)
+        self.client.publish("GHOUST/server/status/gamemodes", mqtt_game_modes_list, retain=True)
 
 
         self.client.loop_forever()

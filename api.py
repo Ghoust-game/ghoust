@@ -17,7 +17,6 @@ class API:
     app = None
 
     def __init__(self, ghoust):
-        self.thread = None
         self.ghoust = ghoust
         self.app = self.create_app()
 
@@ -38,19 +37,29 @@ class API:
         def ghoust():
             return str(self.ghoust)
 
+        @app.route("/games")
+        def games():
+            return jsonify({
+                "gamemodes": self.ghoust.gamemodes,
+                "activegames": self.ghoust.activegames
+            })
+
         return app
 
     def _run(self):
+        """ Just runs the Flask app """
         port = int(os.environ.get("GHOUST_API_PORT", 8080))
         self.app.run(host="0.0.0.0", port=port)
 
     def run(self, debug=True, threaded=False):
+        """ Runs the Flask app with specific settings """
         if threaded and debug:
             raise Exception("API cannot run threaded with debug=True")
 
         if debug:
-            self.app.config.update(dict(DEBUG=debug))
+            self.app.config.update(dict(DEBUG=True))
             self._run()
+            return
 
         elif threaded:
              thread = threading.Thread(target=self._run)
